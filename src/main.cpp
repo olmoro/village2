@@ -1,6 +1,6 @@
 /*
    Дистанционный контроль температуры в доме
-   2024.12.24
+   2024.12.30
 */
 
 #include "stdlib.h"
@@ -120,11 +120,6 @@ extern "C"
     sensorsTaskStart();
     vTaskDelay(1);
 
-    // // Запуск службы контроллера ИК 
-    // startIrRMT();
-    //  xTaskCreate(example_ir_rx_task, "ir_rx_task", 2048, NULL, 10, NULL);
-    // vTaskDelay(1);
-
     // Запуск службы сигнализации
     alarmStart();
     vTaskDelay(1);
@@ -134,7 +129,5 @@ extern "C"
     {
       ledSysBlinkOn(1, 100, 250);
     };
-
-    //startIrRMT();
   }
 }

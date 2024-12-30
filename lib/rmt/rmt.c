@@ -275,3 +275,14 @@ xTaskCreateStaticPinnedToCore(rxIsrHandler, "Pult_task",
 #endif // CONFIG_RX_STATIC_ALLOCATION
 
 }
+
+
+void rxIR_Init(const uint8_t gpioRx, QueueHandle_t queueProc)
+{
+
+}
+
+void rxIR_Enable()
+{
+  startIrRMT();
+}

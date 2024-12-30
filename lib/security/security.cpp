@@ -71,9 +71,9 @@ void alarmInitDevices()
 
   // Запускаем приемник ИК
   #if defined (CONFIG_GPIO_RXIR) && (CONFIG_GPIO_RXIR > -1)
-    startIrRMT();
-    // rxIR_Init(CONFIG_GPIO_RXIR, alarmTaskQueue());
-    // rxIR_Enable();
+    //startIrRMT();
+    rxIR_Init(CONFIG_GPIO_RXIR, alarmTaskQueue());
+    rxIR_Enable();
   #endif // CONFIG_GPIO_RX_IR
 }
 
