@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "tsop",
+			"path": "../../../tsop"
+		}
+	],
+  "settings": {}
+}

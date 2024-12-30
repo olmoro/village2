@@ -1,0 +1,17 @@
+{
+  "name": "meAlarm",
+  "version": "1.6.0",
+  "description": "Security and fire alarm",
+  "keywords": "alarm, security",
+  "authors":
+  [
+    {
+      "name": "Olmoro",
+      "email": "",
+      "url": ""
+    }
+  ],
+  "license": "MIT",
+  "frameworks": ["espidf"],
+  "platforms": ["espressif32"]
+}
