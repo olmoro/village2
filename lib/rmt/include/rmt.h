@@ -14,11 +14,17 @@
 extern "C" {
 #endif
 
-void rxIsrHandler();
+
+
+
+//void rxIsrHandler();
 void startIrRMT();
 
 void rxIR_Init(const uint8_t gpioRx, QueueHandle_t queueProc);
 void rxIR_Enable();
+
+
+
 
 #ifdef __cplusplus
 }
