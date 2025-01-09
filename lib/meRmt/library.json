@@ -1,17 +1,17 @@
 {
-  "name": "reRx433",
-  "version": "3.1.0",
-  "description": "Module for receiving data from wireless sensors 433MHz. Based on https://github.com/sui77/rc-switch",
-  "keywords": "rx433",
+  "name": "meRmt",
+  "version": "1.0.0",
+  "description": "Module for receiving data from IR NEC receiver. Based on https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/rmt.html",
+  "keywords": "rxIr",
   "authors":
   [
     {
-      "name": "Alexander Razzhivin",
-      "email": "kotyara12@yandex.ru",
-      "url": "https://kotyara12.ru"
+      "name": "Olmoro",
+      "email": " ",
+      "url": " "
     }
   ],
   "license": "MIT",
-  "frameworks": ["arduino", "espidf"],
+  "frameworks": ["espidf"],
   "platforms": ["espressif32"]
 }
