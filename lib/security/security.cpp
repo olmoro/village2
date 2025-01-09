@@ -10,7 +10,6 @@
 #include "reEvents.h"
 #include "reParams.h"
 #include "rLog.h"
-
 #include "meRmt.h"   
 
 static const char* logTAG = "ALARM";
