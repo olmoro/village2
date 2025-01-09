@@ -1,13 +1,15 @@
 /*
  * SPDX-FileCopyrightText: 2021-2022 Espressif Systems (Shanghai) CO LTD
  * SPDX-License-Identifier: Unlicense OR CC0-1.0
+ * https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/rmt.html
+ * 
  * https://github.com/espressif/esp-idf/tree/master
  * https://github.com/espressif/esp-idf/tree/master/examples/peripherals/rmt/ir_nec_transceiver
  * Заменен на
  * https://github.com/huseyin-yildiz/ESP32-Idf-NEC-IR-Receiver
  */
 
-#include "rmt.h"
+#include "meRmt.h"
 #include "project_config.h"
 #include "common_config.h"
 #include "def_tasks.h"
@@ -24,7 +26,7 @@
 // #include "time.h"
 // #include "esp_err.h"
 // #include "esp_timer.h"
-// #include <driver/gpio.h>
+#include <driver/gpio.h>
 #include "rLog.h"
 //#include "rTypes.h"
 

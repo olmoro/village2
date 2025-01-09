@@ -11,7 +11,7 @@
 #include "reParams.h"
 #include "rLog.h"
 
-#include "rmt.h"   
+#include "meRmt.h"   
 
 static const char* logTAG = "ALARM";
 

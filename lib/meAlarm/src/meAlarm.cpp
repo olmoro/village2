@@ -14,8 +14,7 @@
 #include "rStrings.h"
 #include "reLed.h"
 #include "reEsp32.h"
-  //#include "rmtRx.h"
-  #include "rmt.h"
+#include "meRmt.h"
 #include "reParams.h"
 #include "reEvents.h"
 // #if defined(CONFIG_GPIO_MODE_LED) && (CONFIG_GPIO_MODE_LED > -1)

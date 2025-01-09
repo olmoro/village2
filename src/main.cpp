@@ -34,8 +34,7 @@
 #if defined(CONFIG_GPIO_BUZZER) && (CONFIG_GPIO_BUZZER > -1)
   #include "reBeep.h"
 #endif // CONFIG_GPIO_BUZZER
-//#include "rmtRx.h"
-#include "rmt.h"
+#include "meRmt.h"
 #include "sensors.h"
 #include "security.h"
 
