@@ -157,7 +157,7 @@
 
 // EN: Stack size for the fire alarm task
 // RU: Размер стека для задачи охранно-пожарной сигнализации
-#define CONFIG_ALARM_STACK_SIZE 4098 //* 2
+#define CONFIG_ALARM_STACK_SIZE 4098 * 2
 
 // EN: Queue size for the fire alarm task
 // RU: Размер очереди для задачи охранно-пожарной сигнализации

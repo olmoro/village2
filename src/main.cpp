@@ -1,6 +1,6 @@
 /*
    Дистанционный контроль температуры в доме
-   2024.12.30
+   2025 январь
 */
 
 #include "stdlib.h"
@@ -35,6 +35,7 @@
   #include "reBeep.h"
 #endif // CONFIG_GPIO_BUZZER
 #include "meRmt.h"
+//#include "meRmt2.h"
 #include "sensors.h"
 #include "security.h"
 

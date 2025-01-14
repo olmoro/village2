@@ -1,14 +1,13 @@
 /*
  * SPDX-FileCopyrightText: 2021-2022 Espressif Systems (Shanghai) CO LTD
  * SPDX-License-Identifier: Unlicense OR CC0-1.0
- * https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/rmt.html
- * 
  * https://github.com/espressif/esp-idf/tree/master
  * https://github.com/espressif/esp-idf/tree/master/examples/peripherals/rmt/ir_nec_transceiver
  * Заменен на
  * https://github.com/huseyin-yildiz/ESP32-Idf-NEC-IR-Receiver
  */
 
+//#include "rmt.h"
 #include "meRmt.h"
 #include "project_config.h"
 #include "common_config.h"
@@ -30,6 +29,10 @@
 #include "rLog.h"
 //#include "rTypes.h"
 
+// Queue
+extern QueueHandle_t alarmTaskQueue;
+
+
 static const char *TAG_RECEIVER = "IR-RECEIVER";
 #define ERR_CHECK(err, str) if (err != ESP_OK) ESP_LOGE(TAG_RECEIVER, "%s: #%d %s", str, err, esp_err_to_name(err));
 #define ERR_GPIO_SET_MODE "Failed to set GPIO mode"
@@ -37,10 +40,6 @@ static const char *TAG_RECEIVER = "IR-RECEIVER";
 
 static gpio_num_t _gpioRx = GPIO_NUM_MAX;
 
-static volatile uint32_t _receivedValue = 0;
-static volatile uint16_t _receivedBitlength = 0;
-static volatile uint16_t _receivedDelay = 0;
-static volatile uint16_t _receivedProtocol = 0;
 
 extern "C" { 
 /**
@@ -156,7 +155,7 @@ static void parse_nec_frame(rmt_symbol_word_t *rmt_nec_symbols, size_t symbol_nu
     //   break;
     // }
   if (symbol_num == 34 || symbol_num == 2) nec_parse_frame(rmt_nec_symbols);
-  //else printf("Unknown NEC frame\r\n");
+  else printf("Unknown NEC frame\r\n");
 }
 
 static bool rmt_rx_done_callback(rmt_channel_handle_t channel, const rmt_rx_done_event_data_t *edata, void *user_data)
@@ -170,82 +169,12 @@ static bool rmt_rx_done_callback(rmt_channel_handle_t channel, const rmt_rx_done
 
 } // extern "C"
 
-rmt_rx_done_event_data_t rx_data;
-rmt_channel_handle_t rx_channel = NULL;
-rmt_receive_config_t receive_config;
-rmt_symbol_word_t raw_symbols[64]; /* 64 symbols should be sufficient for a standard NEC frame */
-QueueHandle_t receive_queue;
 
 // ------------------------------------------------------------------------
-//                          ISR handler
+//                          Задача
 // ------------------------------------------------------------------------
-static void IRAM_ATTR rxIsrHandler(void* arg)
+static void IRAM_ATTR rxIrHandler(void* arg)
 {
-
-
-
-
-//   // while (1) 
-//   // {
-
-    /* wait for RX done signal */
-    if (xQueueReceive(receive_queue, &rx_data, pdMS_TO_TICKS(1000)) == pdPASS) 
-    {
-      /* parse the receive symbols and print the result */
-      parse_nec_frame(rx_data.received_symbols, rx_data.num_symbols);
-
-//      printf("Address=%04X, Command=%04X\r\n", s_nec_code_address, s_nec_code_command);
-
-      _receivedValue = (s_nec_code_address << 16) | s_nec_code_command;
-
-      /* Завершено успешно, отправка данных во внешнюю очередь */
-      QueueHandle_t queueProc = (QueueHandle_t)arg;
-      if (queueProc) 
-      {
-        input_data_t data;
-        data.source = IDS_RXIR;      /* Идентификатор источника */
-        data.rxIR.value = _receivedValue;
-        
-//        printf(" value=%" PRIX32 "\n", data.rxIR.value);
-
-          //    vRingbufferReturnItem(rb, (void *) items);    // Очистка буфера
-
-              /* Публиковать данные */
-        xQueueSend(queueProc, &data, portMAX_DELAY);
-
-        // we have not woken a task at the start of the ISR
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        // post data
-        xQueueSendFromISR(queueProc, &data, &xHigherPriorityTaskWoken);
-        // now the buffer is empty we can switch context if necessary.
-        if (xHigherPriorityTaskWoken) 
-        {
-          portYIELD_FROM_ISR();
-        };
-      }
-
-      // start receive again
-      ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols, sizeof(raw_symbols), &receive_config));
-    }
-// //  }
-}
-
-/*20:54:17 [I] ALARM :: Incoming message:: end of packet: 0, 
-source: RXIR, 
-value: 0x00000000, 
-address: 0x00000000, 
-command: 0x00, 
-count: 1
-*/
-
-
-void rxIR_Init(const uint8_t gpioRx, QueueHandle_t queueProc)
-{
-  /* cpp - преобразование указателя (базовый класс) в указатель на производный класс */
-  _gpioRx = static_cast<gpio_num_t>(gpioRx);
-
-
-  /* Init receiver here */
   ESP_LOGI(TAG_RECEIVER, "create RMT RX channel");
   rmt_rx_channel_config_t rx_channel_cfg = 
   {
@@ -254,19 +183,17 @@ void rxIR_Init(const uint8_t gpioRx, QueueHandle_t queueProc)
     .resolution_hz = IR_RESOLUTION_HZ,
     .mem_block_symbols = 64, /* amount of RMT symbols that the channel can store at a time */
   };
-//  rmt_channel_handle_t rx_channel = NULL;
+  rmt_channel_handle_t rx_channel = NULL;
   ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_channel_cfg, &rx_channel));
 
   ESP_LOGI(TAG_RECEIVER, "register RX done callback");
-  //QueueHandle_t receive_queue = xQueueCreate(1, sizeof(rmt_rx_done_event_data_t));
-  receive_queue = xQueueCreate(1, sizeof(rmt_rx_done_event_data_t));
+  QueueHandle_t receive_queue = xQueueCreate(1, sizeof(rmt_rx_done_event_data_t));
   assert(receive_queue);
   rmt_rx_event_callbacks_t cbs = { .on_recv_done = rmt_rx_done_callback };
   ESP_ERROR_CHECK(rmt_rx_register_event_callbacks(rx_channel, &cbs, receive_queue));
 
   /* the following timing requirement is based on NEC protocol */
-//  rmt_receive_config_t receive_config = 
-  receive_config = 
+  rmt_receive_config_t receive_config = 
   {
     .signal_range_min_ns = 1250,     /* the shortest duration for NEC signal is 
                       560us, 1250ns < 560us, valid signal won't be treated as noise */
@@ -279,13 +206,49 @@ void rxIR_Init(const uint8_t gpioRx, QueueHandle_t queueProc)
   ESP_ERROR_CHECK(rmt_enable(rx_channel));
 
   /* save the received RMT symbols */
-//  rmt_symbol_word_t raw_symbols[64]; /* 64 symbols should be sufficient for a standard NEC frame */
-  //rmt_rx_done_event_data_t rx_data;
+  rmt_symbol_word_t raw_symbols[64]; /* 64 symbols should be sufficient for a standard NEC frame */
+  rmt_rx_done_event_data_t rx_data;
   /* ready to receive */
   ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols, sizeof(raw_symbols), &receive_config));
+  while (1) 
+  {
+    /* wait for RX done signal */
+    if (xQueueReceive(receive_queue, &rx_data, pdMS_TO_TICKS(1000)) == pdPASS) 
+    {
+      /* parse the receive symbols and print the result */
+      parse_nec_frame(rx_data.received_symbols, rx_data.num_symbols);
+      rlog_i(TAG_RECEIVER, "Address=%04X, Command=%04X\r\n", s_nec_code_address, s_nec_code_command);
+
+      /* Завершено успешно, отправка данных во внешнюю очередь */
+      //   QueueHandle_t queueProc = alarmTaskQueue   ;  //QueueHandle_t)arg;
+      if (alarmTaskQueue)   // (queueProc)
+      {
+        input_data_t data;
+        data.source = IDS_RXIR;                       /* Идентификатор источника */
+        data.rxIR.value = (s_nec_code_address << 16) | s_nec_code_command;  /* uint32_t value */
+        
+        rlog_i(TAG_RECEIVER, " value=%" PRIX32 "\n", data.rxIR.value);
+
+          //      // Очистка буфера ??
+
+              /* Публиковать данные */
+          //xQueueSend(queueProc, &data, portMAX_DELAY);
+        //if (xQueueSend( alarmTaskQueue, &data, ( TickType_t ) 0 ) == pdTRUE) {      }
+
+      /* start receive again */
+      ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols, sizeof(raw_symbols), &receive_config));
+      }
+    }
+  }
+  vTaskDelete(NULL);
+}
 
 
 
+void rxIR_Init(const uint8_t gpioRx, QueueHandle_t queueProc)
+{
+  /* cpp - преобразование указателя (базовый класс) в указатель на производный класс */
+  _gpioRx = static_cast<gpio_num_t>(gpioRx);
 
   rlog_i(TAG_RECEIVER, "Initialization of IR receiver on gpio #%d", _gpioRx);
   gpio_reset_pin(_gpioRx);
@@ -293,7 +256,7 @@ void rxIR_Init(const uint8_t gpioRx, QueueHandle_t queueProc)
   ERR_CHECK(gpio_set_direction(_gpioRx, GPIO_MODE_INPUT), ERR_GPIO_SET_MODE);
   ERR_CHECK(gpio_set_pull_mode(_gpioRx, GPIO_FLOATING), ERR_GPIO_SET_MODE);
   ERR_CHECK(gpio_set_intr_type(_gpioRx, GPIO_INTR_ANYEDGE), ERR_GPIO_SET_ISR);
-  ERR_CHECK(gpio_isr_handler_add(_gpioRx, rxIsrHandler, queueProc), ERR_GPIO_SET_ISR);
+  ERR_CHECK(gpio_isr_handler_add(_gpioRx, rxIrHandler, queueProc), ERR_GPIO_SET_ISR);
 }
 
 void rxIR_Enable()
@@ -306,58 +269,10 @@ void rxIR_Enable()
   };
 
 
-  // Для первого включения
-//  xTaskCreate(rxIsrHandler, "Pult_task", CONFIG_RX_TASK_STACK_SIZE, NULL, CONFIG_TASK_PRIORITY_IR_RX, NULL);
-
+  // Задача
+  xTaskCreate(rxIrHandler, "Pult_task", 
+  CONFIG_RX_TASK_STACK_SIZE, 
+  NULL, 
+  CONFIG_TASK_PRIORITY_IR_RX, 
+  NULL);
 }
-
-
-void rxIR_Disable()
-{
-  esp_err_t err = gpio_intr_disable(_gpioRx);
-  if (err == ESP_OK) {
-    rlog_i(TAG_RECEIVER, "Receiver IR stopped");
-  } else {
-    rlog_e(TAG_RECEIVER, "Failed to stop IR receiver");
-  };
-}
-
-// ------------------------------------------------------------------------
-//                          Public functions 
-// ------------------------------------------------------------------------
-
-bool rxIR_IsAvailable()
-{
-  return _receivedValue != 0;
-}
-
-void rxIR_ResetAvailable()
-{
-  _receivedValue = 0;
-}
-
-uint32_t rxIR_GetReceivedValue()
-{
-  return _receivedValue;
-}
-
-uint16_t rxIR_GetReceivedBitLength()
-{
-  return _receivedBitlength;
-}
-
-uint16_t rxIR_GetReceivedDelay()
-{
-  return _receivedDelay;
-}
-
-uint16_t rxIR_GetReceivedProtocol()
-{
-  return _receivedProtocol;
-}
-
-
-
-
-
-

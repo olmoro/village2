@@ -1,0 +1,17 @@
+{
+  "name": "meRmt2",
+  "version": "1.0.0",
+  "description": "Module for receiving data from IR NEC receiver. Based on https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/rmt.html",
+  "keywords": "rxIr",
+  "authors":
+  [
+    {
+      "name": "Olmoro",
+      "email": "molvas66@mail.ru",
+      "url": " "
+    }
+  ],
+  "license": "MIT",
+  "frameworks": ["espidf"],
+  "platforms": ["espressif32"]
+}
